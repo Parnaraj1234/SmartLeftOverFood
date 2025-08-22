@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartChef - Leftover Food App</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#fef6e4; color:#222; transition: background 0.4s, color 0.4s; scroll-behavior:smooth; }
+
+    /* Header */
+    header { 
+      background:#c68642; color:white; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;
+      position: sticky; top:0; z-index:1000; transition: padding 0.3s ease, background 0.4s;
+    }
+    .header-content { text-align:left; }
+    header h2 { margin:0; font-size: 1.8em; }
+    header p { margin:2px 0; }
+
+    .dark-toggle { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; background:#fff; color:#c68642; font-weight:bold; }
+    .dark-toggle:hover { background:#eee; color:#a46d34; }
+
+    /* Navbar */
+    nav { display:flex; justify-content:center; align-items:center; background:#fff3e0; flex-wrap:wrap; position: sticky; top:70px; z-index:999; }
+    nav a { text-decoration:none; padding:12px 20px; color:#222; font-weight:bold; font-size: 1em; transition: color 0.3s, transform 0.3s; }
+    nav a:hover { color:#c68642; transform: scale(1.1); }
+
+    body.dark nav { background:#2e2e2e; }
+    body.dark nav a { color:#f8f8f8 !important; }
+    body.dark nav a:hover { color:#ffcc80 !important; }
+
+    section { padding:20px; }
+    .hero { text-align:center; padding:40px 20px; }
+    .hero h1 { color:#c68642; }
+
+    .container { max-width:800px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+    input, button, select { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
+    button { background:#c68642; color:white; border:none; cursor:pointer; transition:.3s; }
+    button:hover { background:#a46d34; transform: scale(1.05); }
+    .btn-clear { background:#d9534f; }
+    .btn-clear:hover { background:#c9302c; }
+
+    /* Recipe Cards */
+    .recipe-list { margin-top:15px; display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:15px; }
+    .recipe-card { background:#fff3e0; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1); transition: transform 0.3s; }
+    .recipe-card:hover { transform: translateY(-5px); }
+
+    /* Spinner Loader */
+    .image-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #c68642;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    .image-container img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 8px;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
+    }
+
+    .recipe-card h3 { margin:0 0 8px; color:#c68642; }
+    .recipe-meta { font-size:0.85em; color:#555; margin-bottom:8px; }
+    .recipe-steps { font-size:0.9em; margin:10px 0; }
+    .recipe-actions { display:flex; justify-content:space-between; gap:5px; }
+
+    /* Meal Planner Grid */
+    .planner { 
+      display: grid; 
+      grid-template-columns: repeat(7, 1fr); 
+      gap: 10px; 
+      margin-top: 15px;
+    }
+    .day { 
+      background:#fff3e0; 
+      padding:10px; 
+      border-radius:8px; 
+      text-align:center; 
+    }
+    body.dark .day { background:#444; }
+
+    footer { text-align:center; padding:15px; background:#c68642; color:white; margin-top:20px; }
+
+    /* Dark Mode */
+    body.dark { background:#1e1e1e; color:#ddd; }
+    body.dark .container { background:#2b2b2b; color:#ddd; }
+    body.dark input, body.dark select { background:#333; color:#fff; border:1px solid #555; }
+    body.dark .recipe-card { background:#444; color:#fff; }
+
+    /* Responsive Design */
+    @media (max-width: 900px) {
+      .planner { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .planner { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      header { flex-direction: column; text-align: center; }
+      .dark-toggle { margin-top: 10px; }
+      nav { flex-direction: column; }
+      nav a { display: block; width: 100%; text-align: center; padding: 12px; border-top: 1px solid rgba(0,0,0,0.1); }
+      .recipe-list { grid-template-columns: 1fr; }
+      input, button, select { font-size: 1em; padding: 12px; }
+    }
+    @media (max-width: 480px) {
+      header h2 { font-size: 1.4em; }
+      header p { font-size: 0.9em; }
+      .recipe-card h3 { font-size: 1.1em; }
+      .recipe-meta { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <h2>🍲 SmartChef</h2>
+      <p>Turn leftovers into delicious meals</p>
+    </div>
+    <button class="dark-toggle" onclick="toggleDarkMode()">🌙</button>
+  </header>
+
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#ingredients">Add Ingredients</a>
+    <a href="#recipes">Recipes</a>
+    <a href="#favorites">Favorites</a>
+    <a href="#planner">Meal Planner</a>
+    <a href="#">Login</a>
+  </nav>
+
+  <section id="home" class="hero">
+    <h1>Welcome to SmartChef</h1>
+    <p>Reduce food waste by turning your kitchen leftovers into healthy and tasty recipes.</p>
+  </section>
+
+  <section id="ingredients">
+    <div class="container">
+      <h2>Add Your Ingredients</h2>
+      <input type="text" id="ingredientInput" placeholder="Enter an ingredient" />
+      <button onclick="addIngredient()">Add Ingredient</button>
+      <button class="btn-clear" onclick="clearIngredients()">Clear Ingredients</button>
+      <ul id="ingredientList"></ul>
+    </div>
+  </section>
+
+  <section id="recipes">
+    <div class="container">
+      <h2>Suggested Recipes</h2>
+      <button onclick="suggestRecipes()">Get Recipes</button>
+      <button class="btn-clear" onclick="clearRecipes()">Clear Recipes</button>
+      <input type="text" id="searchInput" placeholder="Search recipes..." onkeyup="filterRecipes()">
+      <select id="mealTypeFilter" onchange="filterRecipes()">
+        <option value="">All Meal Types</option>
+        <option>Breakfast</option>
+        <option>Lunch</option>
+        <option>Dinner</option>
+        <option>Snacks</option>
+      </select>
+      <div class="recipe-list" id="recipeList"></div>
+    </div>
+  </section>
+
+  <section id="favorites">
+    <div class="container">
+      <h2>My Favorite Recipes ❤️</h2>
+      <div class="recipe-list" id="favoriteList"></div>
+    </div>
+  </section>
+
+  <section id="planner">
+    <div class="container">
+      <h2>Weekly Meal Planner</h2>
+      <select id="recipeDropdown"></select>
+      <select id="dayDropdown">
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+        <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+      </select>
+      <button onclick="assignMeal()">Add to Planner</button>
+      <button class="btn-clear" onclick="clearPlanner()">Clear Planner</button>
+      <div class="planner" id="plannerGrid">
+        <div class="day"><h4>Mon</h4><div class="meals"></div></div>
+        <div class="day"><h4>Tue</h4><div class="meals"></div></div>
+        <div class="day"><h4>Wed</h4><div class="meals"></div></div>
+        <div class="day"><h4>Thu</h4><div class="meals"></div></div>
+        <div class="day"><h4>Fri</h4><div class="meals"></div></div>
+        <div class="day"><h4>Sat</h4><div class="meals"></div></div>
+        <div class="day"><h4>Sun</h4><div class="meals"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 SmartChef | Sustainability Starts in Your Kitchen</p>
+  </footer>
+
+  <script>
+    let ingredients = [];
+    let recipes = [];
+    let favorites = [];
+
+    function addIngredient() {
+      const input = document.getElementById('ingredientInput');
+      const value = input.value.trim();
+      if(value) {
+        ingredients.push(value);
+        document.getElementById('ingredientList').innerHTML = ingredients.map(i => `<li>${i}</li>`).join('');
+        input.value = '';
+      }
+    }
+
+    function clearIngredients() {
+      ingredients = [];
+      document.getElementById('ingredientList').innerHTML = "";
+    }
+
+    function suggestRecipes() {
+      const list = document.getElementById('recipeList');
+      const dropdown = document.getElementById('recipeDropdown');
+      if(ingredients.length === 0) {
+        list.innerHTML = "<p>Please add some ingredients first.</p>";
+        return;
+      }
+
+      const sampleRecipes = ["Veggie Stir Fry", "Mixed Soup", "Quick Fried Rice", "Healthy Salad Bowl", "Stuffed Paratha", "Spicy Curry"];
+
+      recipes = sampleRecipes.map(name => {
+        return {
+          name: `${name} with ${ingredients.join(", ")}`,
+          time: `${10 + Math.floor(Math.random()*30)} mins`,
+          difficulty: ["Easy","Medium","Hard"][Math.floor(Math.random()*3)],
+          type: ["Breakfast","Lunch","Dinner","Snacks"][Math.floor(Math.random()*4)],
+          steps: ["Chop ingredients", "Cook on medium heat", "Serve hot"],
+          image: `https://source.unsplash.com/400x400/?${ingredients.join(",")},food,recipe`
+        };
+      });
+
+      renderRecipes(recipes);
+      dropdown.innerHTML = recipes.map(r => `<option>${r.name}</option>`).join('');
+    }
+
+    function renderRecipes(recipesToShow) {
+      const list = document.getElementById('recipeList');
+      list.innerHTML = recipesToShow.map(r => `
+        <div class="recipe-card">
+          <div class="image-container">
+            <div class="spinner"></div>
+            <img src="${r.image}" alt="${r.name}" 
+                 onerror="this.onerror=null; this.src='https://source.unsplash.com/400x400/?food,recipe';"
+                 onload="this.previousElementSibling.style.display='none'; this.style.display='block'; this.style.opacity='1';">
+          </div>
+          <h3>${r.name}</h3>
+          <div class="recipe-meta">⏱ ${r.time} | ⭐ ${r.difficulty} | 🍽 ${r.type}</div>
+          <div class="recipe-steps">${r.steps.join(", ")}</div>
+          <div class="recipe-actions">
+            <button onclick="addFavorite('${r.name}')">❤️ Favorite</button>
+            <button onclick="addToPlanner('${r.name}')">📅 Add to Planner</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function clearRecipes() {
+      recipes = [];
+      document.getElementById('recipeList').innerHTML = "";
+      document.getElementById('recipeDropdown').innerHTML = "";
+    }
+
+    function filterRecipes() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const type = document.getElementById('mealTypeFilter').value;
+      const filtered = recipes.filter(r => 
+        r.name.toLowerCase().includes(search) && 
+        (type==="" || r.type===type)
+      );
+      renderRecipes(filtered);
+    }
+
+    function addFavorite(recipeName) {
+      const recipe = recipes.find(r => r.name===recipeName);
+      if(recipe && !favorites.some(f => f.name===recipeName)) {
+        favorites.push(recipe);
+        renderFavorites();
+      }
+    }
+
+    function renderFavorites() {
+      const list = document.getElementById('favoriteList');
+      list.innerHTML = favorites.map(r => `
+        <div class="recipe-card">
+          <div class="image-container">
+            <div class="spinner"></div>
+            <img src="${r.image}" alt="${r.name}" 
+                 onerror="this.onerror=null; this.src='https://source.unsplash.com/400x400/?food,recipe';"
+                 onload="this.previousElementSibling.style.display='none'; this.style.display='block'; this.style.opacity='1';">
+          </div>
+          <h3>${r.name}</h3>
+          <div class="recipe-meta">⏱ ${r.time} | ⭐ ${r.difficulty} | 🍽 ${r.type}</div>
+          <div class="recipe-steps">${r.steps.join(", ")}</div>
+        </div>
+      `).join('');
+    }
+
+    function addToPlanner(recipeName) {
+      document.getElementById('recipeDropdown').value = recipeName;
+    }
+
+    function assignMeal() {
+      const recipe = document.getElementById('recipeDropdown').value;
+      const day = document.getElementById('dayDropdown').value;
+      document.querySelectorAll('.day').forEach(d => {
+        if(d.querySelector('h4').innerText.startsWith(day.substring(0,3))) {
+          const mealDiv = document.createElement('div');
+          mealDiv.className = 'meal';
+          mealDiv.textContent = recipe;
+          d.querySelector('.meals').appendChild(mealDiv);
+        }
+      });
+    }
+
+    function clearPlanner() {
+      document.querySelectorAll('.day .meals').forEach(m => m.innerHTML = "");
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+      const btn = document.querySelector(".dark-toggle");
+      btn.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+    }
+
+    window.onload = () => {
+      if(localStorage.getItem("theme")==="dark") {
+        document.body.classList.add("dark");
+        document.querySelector(".dark-toggle").textContent="☀️";
+      }
+    }
+  </script>
+</body>
+</html>
